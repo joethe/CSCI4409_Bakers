@@ -1,7 +1,7 @@
 # CSCI4409_Bakers -- Distributed
 Having a bit of fun with the bakers algorithm in elixir
 This time we're making an effort to distribute the employees and customers
-across several nodes.
+ross several nodes.
 
 # How to run this mess
 You'll need to compile all three modules, using c "cthulhu.ex" (etc) within iex or something.
