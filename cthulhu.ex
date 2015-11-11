@@ -6,14 +6,24 @@
 
 defmodule Cthulhu do
 
+  # spawns a new employee. Seperate function allows us to more easily modify how this is done.
+  defp spawn_emp() do
+    pid = spawn(Employee, :init, [self()])
+    IO.puts("New employee: #{inspect pid}")
+  end
+
+  # spawns a new customer. Seperate function allows us to more easily modify how this is done.
+  defp spawn_cust() do
+
+  end
+
   defp gen_emp(n) do
     # base case, done generating employees
     if(n == 0) do
       IO.puts("Done generating employees")
     else
       #recuse to spawn all employee processes
-      pid = spawn(Employee, :init, [self()])
-      IO.puts("New employee: #{inspect pid}")
+      spawn_emp()
       gen_emp(n-1)
     end
   end
@@ -39,6 +49,7 @@ defmodule Cthulhu do
     receive do
       {:add_node, node} ->
         IO.puts("adding node #{node}...")
+        chaos_loop(avail_employees, busy_employees, customer_queue, node_list ++ [node])
 
       {:generate_employees, n} -> # Try to generate a few employee processes (n of them)
         IO.puts("Generating #{n} new employees...")
@@ -89,9 +100,13 @@ defmodule Cthulhu do
     end
   end
 
-  def init(numEmployees, numCust, empNodes, custNodes) do
+  # numEmployees -- Number of employees (workers) to start with
+  # numCust -- Number of customers (load drivers) to start with
+  # nodes -- A list of the snames of nodes to use
+  def init(numEmployees, numCust, nodes) do
     IO.puts("Cthulhu INIT Running !")
     :global.register_name(:cthulhu, self())
+
 
 
 
