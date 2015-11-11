@@ -14,7 +14,8 @@ defmodule Cthulhu do
 
   # spawns a new customer. Seperate function allows us to more easily modify how this is done.
   defp spawn_cust() do
-
+    pid = spawn(Customer, :init, [self()])
+    IO.puts("New customer: #{inspect pid}")
   end
 
   defp gen_emp(n) do
@@ -34,8 +35,7 @@ defmodule Cthulhu do
       IO.puts("Done generating customers")
     else
       #recurse to spawn new customers
-      pid = spawn(Customer, :init, [self()])
-      IO.puts("New customer: #{inspect pid}")
+      spawn_cust()
       gen_cust(n-1)
     end
   end
@@ -63,7 +63,8 @@ defmodule Cthulhu do
 
       {:request_service, cust_pid} -> # Handle a customer request
       #  IO.puts("New customer request from #{inspect cust_pid}")
-        if(List.first(avail_employees) == nil) do
+        if(List.first(avail_employees) == nil) do      pid = spawn(Customer, :init, [self()])
+      IO.puts("New customer: #{inspect pid}")
         #  IO.puts("No available employees!!!")
           send(cust_pid, {:deny})
           chaos_loop(avail_employees, busy_employees, customer_queue ++ [cust_pid], node_list)
@@ -107,8 +108,8 @@ defmodule Cthulhu do
     IO.puts("Cthulhu INIT Running !")
     :global.register_name(:cthulhu, self())
 
-
-
+    # add nodes...
+    each(nodes, &(send(self(), {:add_node, &1})))
 
     send(self(), {:generate_employees, numEmployees})
     send(self(), {:generate_customers, numCust})
