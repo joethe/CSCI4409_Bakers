@@ -7,36 +7,38 @@
 defmodule Cthulhu do
 
   # spawns a new employee. Seperate function allows us to more easily modify how this is done.
-  defp spawn_emp() do
-    pid = spawn(Employee, :init, [self()])
-    IO.puts("New employee: #{inspect pid}")
+  defp spawn_emp(node_list) do
+    node = Enum.at(node_list, :random.uniform(length(node_list)) - 1)
+    pid = Node.spawn(node, Employee, :init, [self()])
+    IO.puts("New employee: #{inspect pid} on node: #{inspect node}")
   end
 
   # spawns a new customer. Seperate function allows us to more easily modify how this is done.
-  defp spawn_cust() do
-    pid = spawn(Customer, :init, [self()])
-    IO.puts("New customer: #{inspect pid}")
+  defp spawn_cust(node_list) do
+    node = Enum.at(node_list, :random.uniform(length(node_list)) - 1)
+    pid = Node.spawn(node, Customer, :init, [self()])
+    IO.puts("New Customer: #{inspect pid} on node: #{inspect node}")
   end
 
-  defp gen_emp(n) do
+  defp gen_emp(n, node_list) do
     # base case, done generating employees
     if(n == 0) do
       IO.puts("Done generating employees")
     else
       #recuse to spawn all employee processes
-      spawn_emp()
-      gen_emp(n-1)
+      spawn_emp(node_list)
+      gen_emp(n-1, node_list)
     end
   end
 
-  defp gen_cust(n) do
+  defp gen_cust(n, node_list) do
     #base case, done generating customers
     if(n == 0) do
       IO.puts("Done generating customers")
     else
       #recurse to spawn new customers
-      spawn_cust()
-      gen_cust(n-1)
+      spawn_cust(node_list)
+      gen_cust(n-1, node_list)
     end
   end
 
@@ -53,18 +55,18 @@ defmodule Cthulhu do
 
       {:generate_employees, n} -> # Try to generate a few employee processes (n of them)
         IO.puts("Generating #{n} new employees...")
-        gen_emp(n)
+        gen_emp(n, node_list)
         chaos_loop(avail_employees, busy_employees, customer_queue, node_list)
 
       {:generate_customers, n} -> # Try to generate a few customers...
         IO.puts("Generating #{n} new customers...")
-        gen_cust(n)
+        gen_cust(n, node_list)
         chaos_loop(avail_employees, busy_employees, customer_queue, node_list)
 
       {:request_service, cust_pid} -> # Handle a customer request
-      #  IO.puts("New customer request from #{inspect cust_pid}")
-        if(List.first(avail_employees) == nil) do      pid = spawn(Customer, :init, [self()])
-      IO.puts("New customer: #{inspect pid}")
+        #IO.puts("New customer request from #{inspect cust_pid}")
+        if(List.first(avail_employees) == nil) do
+        #IO.puts("Customer request from: #{inspect pid}")
         #  IO.puts("No available employees!!!")
           send(cust_pid, {:deny})
           chaos_loop(avail_employees, busy_employees, customer_queue ++ [cust_pid], node_list)
@@ -93,9 +95,14 @@ defmodule Cthulhu do
 
       {:summary} ->
         IO.puts(" ==== Cthulhu Summary ==== ")
+        IO.puts("   Nodes: #{inspect node_list}")
         IO.puts("   Available Employees: #{inspect avail_employees}")
         IO.puts("   Busy Employees: #{inspect busy_employees}")
         IO.puts("   Customer Queue: #{inspect customer_queue}")
+        chaos_loop(avail_employees, busy_employees, customer_queue, node_list)
+
+      {:report} ->
+        Enum.each(avail_employees, &(send(&1, {:report})))
         chaos_loop(avail_employees, busy_employees, customer_queue, node_list)
 
     end
@@ -108,12 +115,14 @@ defmodule Cthulhu do
     IO.puts("Cthulhu INIT Running !")
     :global.register_name(:cthulhu, self())
 
+    :random.seed(:erlang.now)
+
     # add nodes...
-    each(nodes, &(send(self(), {:add_node, &1})))
+    Enum.each(nodes, &(send(self(), {:add_node, &1})))
 
     send(self(), {:generate_employees, numEmployees})
     send(self(), {:generate_customers, numCust})
-    chaos_loop([], [], [], 0)
+    chaos_loop([], [], [], [])
   end
 
 end

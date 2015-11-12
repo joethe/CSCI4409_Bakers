@@ -26,12 +26,12 @@ defmodule Customer do
 
   def init(dark_lord) do
 
-    IO.puts("Client #{inspect self()} created. Dark lord: #{inspect dark_lord} ... sleeping...")
+    #IO.puts("Client #{inspect self()} created. Dark lord: #{inspect dark_lord} ... sleeping...")
 
     :random.seed(:erlang.now)
     :timer.sleep(:random.uniform(20000))
 
-    IO.puts("Client #{inspect self()} awake!")
+    #IO.puts("Client #{inspect self()} awake!")
 
     send(dark_lord, {:request_service, self()})
     loop(dark_lord, nil)
